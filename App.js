@@ -1,118 +1,73 @@
-import React, { useRef, useState } from 'react';
-import { View, Animated, PanResponder, StyleSheet, Text, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Image } from 'react-native';
+import SwipeCards from 'react-native-swipe-cards';
 
-const CardStack = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const position = useRef(new Animated.ValueXY()).current;
+const SettingsScreen = () => {
 
-  const cards = [
-    { id: 1, text: 'Card 1', backgroundColor: '#FFC107' },
-    { id: 2, text: 'Card 2', backgroundColor: '#E91E63' },
-    { id: 3, text: 'Card 3', backgroundColor: '#2196F3' },
-  ];
-
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderMove: (_, gesture) => {
-        position.setValue({ x: gesture.dx, y: gesture.dy });
-      },
-      onPanResponderRelease: (_, gesture) => {
-        if (gesture.dx > 120) {
-          swipeRight();
-        } else if (gesture.dx < -120) {
-          swipeLeft();
-        } else {
-          resetPosition();
-        }
-      },
-    })
-  ).current;
-
-  const swipeRight = () => {
-    Animated.timing(position, {
-      toValue: { x: 500, y: 0 },
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setCurrentIndex(currentIndex + 1);
-      resetPosition();
-    });
+  const handleYup = (card) => {
+    console.log("Swiped right!");
+    // Handle right swipe action here
   };
 
-  const swipeLeft = () => {
-    Animated.timing(position, {
-      toValue: { x: -500, y: 0 },
-      duration: 200,
-      useNativeDriver: true,
-    }).start(() => {
-      setCurrentIndex(currentIndex + 1);
-      resetPosition();
-    });
+  const handleNope = (card) => {
+    console.log("Swiped left!");
+    // Handle left swipe action here
   };
 
-  const resetPosition = () => {
-    Animated.spring(position, {
-      toValue: { x: 0, y: 0 },
-      friction: 4,
-      useNativeDriver: true,
-    }).start();
+  const Card = ({ card }) => (
+    <View style={styles.card}>
+      <Image source={card.image} style={styles.cardImage} />
+      <Text style={styles.cardName}>{card.name}</Text>
+    </View>
+  );
+
+  const renderNoMoreCards = () => (
+    <View style={styles.noMoreCards}>
+      <Text>No more cards</Text>
+    </View>
+  );
+
+  const handleSwipeLeft = () => {
+    swipeCard('left');
   };
 
-  const getCardStyle = () => {
-    const rotate = position.x.interpolate({
-      inputRange: [-200, 0, 200],
-      outputRange: ['-30deg', '0deg', '30deg'],
-    });
-
-    return {
-      ...position.getLayout(),
-      transform: [{ rotate }],
-    };
+  const handleSwipeRight = () => {
+    swipeCard('right');
   };
 
-  const handleLike = () => {
-    swipeRight();
+  const swipeCard = (direction) => {
+    // Swipe the top card programmatically
+    if (cards.length > 0) {
+      const newCards = [...cards];
+      newCards.shift(); // Remove the top card
+      setCards(newCards);
+      if (direction === 'left') {
+        handleNope(cards[0]);
+      } else if (direction === 'right') {
+        handleYup(cards[0]);
+      }
+    }
   };
 
-  const handleDislike = () => {
-    swipeLeft();
-  };
+  const [cards, setCards] = useState([
+    { id: 1, name: 'Card 1', image: require('./images/image1.jpg') },
+    { id: 2, name: 'Card 2', image: require('./images/image2.jpg') },
+    { id: 3, name: 'Card 3', image: require('./images/image3.jpg') },
+    { id: 4, name: 'Card 4', image: require('./images/image4.jpg') },
+  ]);
 
   return (
     <View style={styles.container}>
-      {cards.map((card, index) => {
-        if (index < currentIndex) {
-          return null;
-        } else if (index === currentIndex) {
-          return (
-            <Animated.View
-              key={card.id}
-              {...panResponder.panHandlers}
-              style={[styles.card, getCardStyle(), { backgroundColor: card.backgroundColor }]}
-            >
-              <Text style={styles.cardText}>{card.text}</Text>
-              <View style={styles.actionButtonsContainer}>
-                <TouchableOpacity style={styles.actionButton} onPress={handleDislike}>
-                  <Text style={styles.actionButtonText}>Dislike</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
-                  <Text style={styles.actionButtonText}>Like</Text>
-                </TouchableOpacity>
-              </View>
-            </Animated.View>
-          );
-        } else {
-          return (
-            <Animated.View
-              key={card.id}
-              style={[styles.card, { opacity: 0, backgroundColor: card.backgroundColor }]}
-            >
-              <Text style={styles.cardText}>{card.text}</Text>
-            </Animated.View>
-          );
-        }
-      })}
+      <Text style={styles.title}>Swipeable Cards</Text>
+      <SwipeCards
+        cards={cards}
+        renderCard={(cardData) => <Card card={cardData} />}
+        renderNoMoreCards={renderNoMoreCards}
+        handleYup={handleYup}
+        handleNope={handleNope}
+        showYup={false}
+        showNope={false}
+      />
     </View>
   );
 };
@@ -123,41 +78,52 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  title: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
   card: {
     width: 300,
-    height: 400,
-    borderRadius: 8,
+    height: 200,
+    backgroundColor: 'white',
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    position: 'absolute',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3,
   },
-  cardText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
+  cardImage: {
+    width: '100%',
+    height: '80%',
+    borderRadius: 10,
+    marginBottom: 10,
   },
-  actionButtonsContainer: {
-    flexDirection: 'row',
-    marginTop: 16,
-  },
-  actionButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 4,
-    marginRight: 8,
-  },
-  actionButtonText: {
+  cardName: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#000000',
   },
+  noMoreCards: {
+    width: 300,
+    height: 200,
+    backgroundColor: 'white',
+    color:'black',
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  button: {
+    backgroundColor: 'blue',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 5,
+    marginTop: 20,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: 'white',
+  },
+
 });
 
-export default CardStack;
+export default SettingsScreen;
 
